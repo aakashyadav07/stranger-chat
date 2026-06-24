@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>StrangerChat - Talk to Strangers</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #1a1a2e;
+      color: #eee;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+      color: #e94560;
+    }
+
+    p.subtitle {
+      color: #aaa;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+    }
+
+    #chat-box {
+      width: 500px;
+      height: 400px;
+      background: #16213e;
+      border-radius: 12px;
+      padding: 15px;
+      overflow-y: auto;
+      margin-bottom: 15px;
+      border: 1px solid #0f3460;
+    }
+
+    .msg {
+      margin-bottom: 10px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      max-width: 80%;
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+
+    .msg.you {
+      background: #e94560;
+      margin-left: auto;
+      text-align: right;
+    }
+
+    .msg.stranger {
+      background: #0f3460;
+    }
+
+    .msg.system {
+      background: transparent;
+      color: #aaa;
+      font-size: 0.85rem;
+      text-align: center;
+      max-width: 100%;
+    }
+
+    .msg.warning {
+      background: #ff9800;
+      color: #000;
+      text-align: center;
+      max-width: 100%;
+    }
+
+    #input-area {
+      display: flex;
+      gap: 10px;
+      width: 500px;
+    }
+
+    #msg-input {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      background: #16213e;
+      color: #eee;
+      font-size: 0.95rem;
+      outline: none;
+      border: 1px solid #0f3460;
+    }
+
+    button {
+      padding: 12px 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: bold;
+    }
+
+    #send-btn {
+      background: #e94560;
+      color: white;
+    }
+
+    #next-btn {
+      background: #0f3460;
+      color: white;
+    }
+
+    button:hover {
+      opacity: 0.85;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>💬 StrangerChat</h1>
+  <p class="subtitle">Talk to random strangers anonymously</p>
+
+  <div id="chat-box"></div>
+
+  <div id="input-area">
+    <input type="text" id="msg-input" placeholder="Type a message..." />
+    <button id="send-btn">Send</button>
+    <button id="next-btn">Next ⏭</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const chatBox = document.getElementById('chat-box');
+    const msgInput = document.getElementById('msg-input');
+
+    function addMessage(text, type) {
+      const div = document.createElement('div');
+      div.classList.add('msg', type);
+      div.textContent = text;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    socket.on('waiting', (data) => addMessage(data.message, 'system'));
+    socket.on('matched', (data) => addMessage(data.message, 'system'));
+    socket.on('message', (data) => addMessage(data.text, 'stranger'));
+    socket.on('warning', (data) => addMessage(data.message, 'warning'));
+    socket.on('banned', (data) => addMessage(data.message, 'system'));
+    socket.on('disconnected', (data) => addMessage(data.message, 'system'));
+
+    document.getElementById('send-btn').addEventListener('click', sendMessage);
+
+    msgInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+
+    function sendMessage() {
+      const text = msgInput.value.trim();
+      if (!text) return;
+      socket.emit('message', { text });
+      addMessage(text, 'you');
+      msgInput.value = '';
+    }
+
+    document.getElementById('next-btn').addEventListener('click', () => {
+      socket.emit('next');
+      addMessage('Looking for a new stranger...', 'system');
+    });
+  </script>
+
+</body>
+</html>
