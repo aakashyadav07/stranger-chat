@@ -3,173 +3,603 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>StrangerChat - Talk to Strangers</title>
+  <title>StrangerChat</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      background: #1a1a2e;
-      color: #eee;
-      font-family: 'Segoe UI', sans-serif;
+      background: #313338;
+      color: #dbdee1;
+      font-family: 'gg sans', 'Noto Sans', sans-serif;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* SIDEBAR */
+    #sidebar {
+      width: 240px;
+      background: #2b2d31;
       display: flex;
       flex-direction: column;
+      padding: 16px 8px;
+      gap: 4px;
+    }
+
+    #sidebar h1 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      padding: 8px 10px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .sidebar-item {
+      padding: 8px 10px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      color: #949ba4;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sidebar-item:hover, .sidebar-item.active {
+      background: #35373c;
+      color: #dbdee1;
+    }
+
+    #status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #747f8d;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    #status-dot.online { background: #23a55a; }
+    #status-dot.searching { background: #f0b232; }
+
+    /* MAIN CHAT */
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    /* HEADER */
+    #header {
+      height: 48px;
+      background: #313338;
+      border-bottom: 1px solid #1e1f22;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    #header span {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #fff;
+    }
+
+    #header .status-text {
+      font-size: 0.8rem;
+      color: #949ba4;
+      font-weight: 400;
+    }
+
+    /* USERNAME MODAL */
+    #username-modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      display: flex;
       align-items: center;
       justify-content: center;
-      height: 100vh;
+      z-index: 100;
+      padding: 16px;
     }
 
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 10px;
-      color: #e94560;
+    #username-box {
+      background: #2b2d31;
+      padding: 24px;
+      border-radius: 8px;
+      width: 100%;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
-    p.subtitle {
-      color: #aaa;
-      margin-bottom: 20px;
-      font-size: 0.9rem;
+    #username-box h2 {
+      font-size: 1.2rem;
+      color: #fff;
+      font-weight: 700;
     }
 
+    #username-box p {
+      font-size: 0.85rem;
+      color: #949ba4;
+    }
+
+    #username-input {
+      background: #1e1f22;
+      border: none;
+      border-radius: 4px;
+      padding: 10px 12px;
+      color: #dbdee1;
+      font-size: 0.95rem;
+      outline: none;
+      width: 100%;
+    }
+
+    #interests-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .interest-tag {
+      background: #35373c;
+      color: #dbdee1;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+
+    .interest-tag.selected {
+      border-color: #5865f2;
+      background: #3d4270;
+      color: #fff;
+    }
+
+    #start-btn {
+      background: #5865f2;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    #start-btn:hover { background: #4752c4; }
+
+    /* CHAT BOX */
     #chat-box {
-      width: 500px;
-      height: 400px;
-      background: #16213e;
-      border-radius: 12px;
-      padding: 15px;
+      flex: 1;
       overflow-y: auto;
-      margin-bottom: 15px;
-      border: 1px solid #0f3460;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    #chat-box::-webkit-scrollbar { width: 4px; }
+    #chat-box::-webkit-scrollbar-thumb { background: #1e1f22; border-radius: 4px; }
+
+    .msg-wrapper {
+      display: flex;
+      flex-direction: column;
+      max-width: 70%;
+    }
+
+    .msg-wrapper.you { align-self: flex-end; align-items: flex-end; }
+    .msg-wrapper.stranger { align-self: flex-start; }
+
+    .msg-label {
+      font-size: 0.75rem;
+      color: #949ba4;
+      margin-bottom: 2px;
+      padding: 0 4px;
     }
 
     .msg {
-      margin-bottom: 10px;
       padding: 8px 12px;
       border-radius: 8px;
-      max-width: 80%;
-      font-size: 0.95rem;
-      line-height: 1.4;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      word-break: break-word;
     }
 
-    .msg.you {
-      background: #e94560;
-      margin-left: auto;
-      text-align: right;
-    }
-
-    .msg.stranger {
-      background: #0f3460;
-    }
-
+    .msg.you { background: #5865f2; color: #fff; border-radius: 8px 8px 2px 8px; }
+    .msg.stranger { background: #2b2d31; color: #dbdee1; border-radius: 8px 8px 8px 2px; }
     .msg.system {
       background: transparent;
-      color: #aaa;
-      font-size: 0.85rem;
+      color: #949ba4;
+      font-size: 0.8rem;
       text-align: center;
+      align-self: center;
       max-width: 100%;
+      padding: 4px;
     }
-
     .msg.warning {
-      background: #ff9800;
+      background: #f0b232;
       color: #000;
-      text-align: center;
-      max-width: 100%;
+      border-radius: 8px;
+      align-self: center;
+      font-size: 0.85rem;
+      padding: 8px 12px;
     }
 
+    /* TYPING */
+    #typing-indicator {
+      padding: 4px 16px;
+      font-size: 0.8rem;
+      color: #949ba4;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    /* INPUT AREA */
     #input-area {
+      padding: 0 16px 16px;
       display: flex;
-      gap: 10px;
-      width: 500px;
+      gap: 8px;
+      align-items: center;
+      flex-shrink: 0;
     }
 
     #msg-input {
       flex: 1;
-      padding: 12px;
-      border-radius: 8px;
+      background: #383a40;
       border: none;
-      background: #16213e;
-      color: #eee;
-      font-size: 0.95rem;
+      border-radius: 8px;
+      padding: 11px 16px;
+      color: #dbdee1;
+      font-size: 0.9rem;
       outline: none;
-      border: 1px solid #0f3460;
+      min-width: 0;
     }
 
-    button {
-      padding: 12px 18px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      font-weight: bold;
-    }
+    #msg-input::placeholder { color: #6d6f78; }
 
     #send-btn {
-      background: #e94560;
-      color: white;
+      background: #5865f2;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
     }
+
+    #send-btn:hover { background: #4752c4; }
 
     #next-btn {
-      background: #0f3460;
-      color: white;
+      background: #35373c;
+      color: #dbdee1;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      white-space: nowrap;
     }
 
-    button:hover {
-      opacity: 0.85;
+    #next-btn:hover { background: #3d4045; }
+
+    #emoji-btn {
+      background: none;
+      border: none;
+      font-size: 1.3rem;
+      cursor: pointer;
+      padding: 4px;
+      flex-shrink: 0;
+    }
+
+    /* EMOJI PANEL */
+    #emoji-panel {
+      display: none;
+      position: fixed;
+      bottom: 80px;
+      left: 260px;
+      background: #2b2d31;
+      border-radius: 8px;
+      padding: 12px;
+      flex-wrap: wrap;
+      gap: 6px;
+      width: 240px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      z-index: 10;
+    }
+
+    #emoji-panel.show { display: flex; }
+
+    .emoji { font-size: 1.4rem; cursor: pointer; padding: 4px; border-radius: 4px; }
+    .emoji:hover { background: #35373c; }
+
+    #report-btn {
+      background: none;
+      border: none;
+      color: #ed4245;
+      font-size: 0.9rem;
+      cursor: pointer;
+      padding: 8px 10px;
+      border-radius: 4px;
+      text-align: left;
+      width: 100%;
+    }
+
+    #report-btn:hover { background: #35373c; }
+
+    /* MOBILE */
+    @media (max-width: 768px) {
+      #sidebar { display: none; }
+
+      #emoji-panel {
+        left: 10px;
+        bottom: 70px;
+        width: 200px;
+      }
+
+      .msg-wrapper { max-width: 85%; }
+
+      #input-area {
+        padding: 0 8px 12px;
+        gap: 4px;
+      }
+
+      #msg-input {
+        font-size: 16px;
+        padding: 10px 10px;
+      }
+
+      #send-btn, #next-btn {
+        padding: 10px 10px;
+        font-size: 0.8rem;
+      }
+
+      #header { padding: 0 12px; }
+      #chat-box { padding: 12px 8px; }
+
+      /* Mobile report button */
+      #mobile-report {
+        display: flex !important;
+      }
+    }
+
+    #mobile-report {
+      display: none;
+      padding: 4px 16px;
+      flex-shrink: 0;
+    }
+
+    #mobile-report button {
+      background: none;
+      border: none;
+      color: #ed4245;
+      font-size: 0.8rem;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
 
+<!-- USERNAME MODAL -->
+<div id="username-modal">
+  <div id="username-box">
+    <h2>👋 Welcome to StrangerChat</h2>
+    <p>Set your username and pick your interests</p>
+    <input type="text" id="username-input" placeholder="Enter username..." maxlength="20" />
+    <div>
+      <p style="font-size:0.8rem; color:#949ba4; margin-bottom:8px;">Select interests (optional)</p>
+      <div id="interests-container">
+        <span class="interest-tag" data-interest="Gaming">🎮 Gaming</span>
+        <span class="interest-tag" data-interest="Music">🎵 Music</span>
+        <span class="interest-tag" data-interest="Movies">🎬 Movies</span>
+        <span class="interest-tag" data-interest="Sports">⚽ Sports</span>
+        <span class="interest-tag" data-interest="Tech">💻 Tech</span>
+        <span class="interest-tag" data-interest="Anime">🎌 Anime</span>
+        <span class="interest-tag" data-interest="Food">🍕 Food</span>
+        <span class="interest-tag" data-interest="Travel">✈️ Travel</span>
+      </div>
+    </div>
+    <button id="start-btn">Start Chatting →</button>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
   <h1>💬 StrangerChat</h1>
-  <p class="subtitle">Talk to random strangers anonymously</p>
+  <div class="sidebar-item active">
+    <span id="status-dot"></span>
+    <span id="sidebar-status">Connecting...</span>
+  </div>
+  <button id="report-btn">🚩 Report Stranger</button>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="header">
+    <span># stranger</span>
+    <span class="status-text" id="header-status">Looking for someone...</span>
+  </div>
 
   <div id="chat-box"></div>
 
-  <div id="input-area">
-    <input type="text" id="msg-input" placeholder="Type a message..." />
-    <button id="send-btn">Send</button>
-    <button id="next-btn">Next ⏭</button>
+  <div id="typing-indicator"></div>
+
+  <!-- Mobile Report -->
+  <div id="mobile-report">
+    <button onclick="reportStranger()">🚩 Report Stranger</button>
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    const chatBox = document.getElementById('chat-box');
-    const msgInput = document.getElementById('msg-input');
+  <!-- EMOJI PANEL -->
+  <div id="emoji-panel">
+    <span class="emoji">😂</span><span class="emoji">😍</span>
+    <span class="emoji">🔥</span><span class="emoji">👍</span>
+    <span class="emoji">😭</span><span class="emoji">🥺</span>
+    <span class="emoji">😎</span><span class="emoji">🤣</span>
+    <span class="emoji">❤️</span><span class="emoji">😊</span>
+    <span class="emoji">🙏</span><span class="emoji">💀</span>
+    <span class="emoji">👀</span><span class="emoji">✨</span>
+    <span class="emoji">😤</span><span class="emoji">🤔</span>
+  </div>
 
-    function addMessage(text, type) {
+  <div id="input-area">
+    <button id="emoji-btn">😊</button>
+    <input type="text" id="msg-input" placeholder="Message stranger..." />
+    <button id="next-btn">Skip ⏭</button>
+    <button id="send-btn">Send</button>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+  const chatBox = document.getElementById('chat-box');
+  const msgInput = document.getElementById('msg-input');
+  const typingIndicator = document.getElementById('typing-indicator');
+  const statusDot = document.getElementById('status-dot');
+  const sidebarStatus = document.getElementById('sidebar-status');
+  const headerStatus = document.getElementById('header-status');
+
+  let username = 'You';
+  let typingTimeout;
+
+  const selectedInterests = [];
+  document.querySelectorAll('.interest-tag').forEach(tag => {
+    tag.addEventListener('click', () => {
+      tag.classList.toggle('selected');
+      const interest = tag.dataset.interest;
+      if (selectedInterests.includes(interest)) {
+        selectedInterests.splice(selectedInterests.indexOf(interest), 1);
+      } else {
+        selectedInterests.push(interest);
+      }
+    });
+  });
+
+  document.getElementById('start-btn').addEventListener('click', () => {
+    const val = document.getElementById('username-input').value.trim();
+    username = val || 'Anonymous';
+    document.getElementById('username-modal').style.display = 'none';
+    socket.emit('join', { username, interests: selectedInterests });
+  });
+
+  function addMessage(text, type, label) {
+    if (type === 'system' || type === 'warning') {
       const div = document.createElement('div');
       div.classList.add('msg', type);
       div.textContent = text;
       chatBox.appendChild(div);
-      chatBox.scrollTop = chatBox.scrollHeight;
+    } else {
+      const wrapper = document.createElement('div');
+      wrapper.classList.add('msg-wrapper', type);
+      if (label) {
+        const lbl = document.createElement('div');
+        lbl.classList.add('msg-label');
+        lbl.textContent = label;
+        wrapper.appendChild(lbl);
+      }
+      const div = document.createElement('div');
+      div.classList.add('msg', type);
+      div.textContent = text;
+      wrapper.appendChild(div);
+      chatBox.appendChild(wrapper);
     }
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
 
-    socket.on('waiting', (data) => addMessage(data.message, 'system'));
-    socket.on('matched', (data) => addMessage(data.message, 'system'));
-    socket.on('message', (data) => addMessage(data.text, 'stranger'));
-    socket.on('warning', (data) => addMessage(data.message, 'warning'));
-    socket.on('banned', (data) => addMessage(data.message, 'system'));
-    socket.on('disconnected', (data) => addMessage(data.message, 'system'));
+  socket.on('waiting', (data) => {
+    statusDot.className = 'searching';
+    sidebarStatus && (sidebarStatus.textContent = 'Searching...');
+    headerStatus.textContent = 'Looking for someone...';
+    addMessage(data.message, 'system');
+  });
 
-    document.getElementById('send-btn').addEventListener('click', sendMessage);
+  socket.on('matched', (data) => {
+    statusDot.className = 'online';
+    sidebarStatus && (sidebarStatus.textContent = 'Connected');
+    headerStatus.textContent = 'Stranger connected ✅';
+    addMessage(data.message, 'system');
+  });
 
-    msgInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') sendMessage();
+  socket.on('message', (data) => {
+    typingIndicator.textContent = '';
+    addMessage(data.text, 'stranger', 'Stranger');
+  });
+
+  socket.on('warning', (data) => addMessage(data.message, 'warning'));
+  socket.on('banned', (data) => addMessage(data.message, 'system'));
+
+  socket.on('disconnected', (data) => {
+    statusDot.className = '';
+    sidebarStatus && (sidebarStatus.textContent = 'Disconnected');
+    headerStatus.textContent = 'Stranger left';
+    addMessage(data.message, 'system');
+  });
+
+  socket.on('typing', () => {
+    typingIndicator.textContent = 'Stranger is typing...';
+    clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => {
+      typingIndicator.textContent = '';
+    }, 2000);
+  });
+
+  socket.on('reported', (data) => addMessage(data.message, 'system'));
+
+  function sendMessage() {
+    const text = msgInput.value.trim();
+    if (!text) return;
+    socket.emit('message', { text });
+    addMessage(text, 'you', username);
+    msgInput.value = '';
+  }
+
+  document.getElementById('send-btn').addEventListener('click', sendMessage);
+  msgInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+
+  msgInput.addEventListener('input', () => {
+    socket.emit('typing');
+  });
+
+  document.getElementById('next-btn').addEventListener('click', () => {
+    socket.emit('next');
+    addMessage('Skipped. Looking for new stranger...', 'system');
+    typingIndicator.textContent = '';
+    statusDot.className = 'searching';
+    sidebarStatus && (sidebarStatus.textContent = 'Searching...');
+    headerStatus.textContent = 'Looking for someone...';
+  });
+
+  document.getElementById('emoji-btn').addEventListener('click', () => {
+    document.getElementById('emoji-panel').classList.toggle('show');
+  });
+
+  document.querySelectorAll('.emoji').forEach(e => {
+    e.addEventListener('click', () => {
+      msgInput.value += e.textContent;
+      msgInput.focus();
+      document.getElementById('emoji-panel').classList.remove('show');
     });
+  });
 
-    function sendMessage() {
-      const text = msgInput.value.trim();
-      if (!text) return;
-      socket.emit('message', { text });
-      addMessage(text, 'you');
-      msgInput.value = '';
-    }
+  function reportStranger() {
+    socket.emit('report');
+    addMessage('⚠️ Stranger reported!', 'system');
+    socket.emit('next');
+  }
 
-    document.getElementById('next-btn').addEventListener('click', () => {
-      socket.emit('next');
-      addMessage('Looking for a new stranger...', 'system');
-    });
-  </script>
-
+  document.getElementById('report-btn').addEventListener('click', reportStranger);
+</script>
 </body>
 </html>

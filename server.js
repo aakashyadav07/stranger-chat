@@ -19,16 +19,26 @@ function containsBadWord(message) {
 
 app.use(express.static('public'));
 
-let waitingUser = null;
+let waitingUsers = [];
 const warnings = {};
 
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
-  warnings[socket.id] = 0;
+function matchUsers(socket) {
+  const interests = socket.interests || [];
 
-  if (waitingUser) {
-    const partner = waitingUser;
-    waitingUser = null;
+  // Interest based matching
+  let matchIndex = -1;
+  if (interests.length > 0) {
+    matchIndex = waitingUsers.findIndex(u =>
+      u.interests && u.interests.some(i => interests.includes(i))
+    );
+  }
+
+  if (matchIndex === -1 && waitingUsers.length > 0) {
+    matchIndex = 0;
+  }
+
+  if (matchIndex !== -1) {
+    const partner = waitingUsers.splice(matchIndex, 1)[0];
 
     const room = socket.id + '#' + partner.id;
     socket.join(room);
@@ -39,12 +49,23 @@ io.on('connection', (socket) => {
     socket.partner = partner;
     partner.partner = socket;
 
-    socket.emit('matched', { message: 'Stranger found! Say hello 👋' });
-    partner.emit('matched', { message: 'Stranger found! Say hello 👋' });
+    socket.emit('matched', { message: '✅ Stranger found! Say hello 👋' });
+    partner.emit('matched', { message: '✅ Stranger found! Say hello 👋' });
   } else {
-    waitingUser = socket;
-    socket.emit('waiting', { message: 'Looking for a stranger...' });
+    waitingUsers.push(socket);
+    socket.emit('waiting', { message: '🔍 Looking for a stranger...' });
   }
+}
+
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+  warnings[socket.id] = 0;
+
+  socket.on('join', (data) => {
+    socket.username = data.username || 'Anonymous';
+    socket.interests = data.interests || [];
+    matchUsers(socket);
+  });
 
   socket.on('message', (data) => {
     if (containsBadWord(data.text)) {
@@ -53,7 +74,7 @@ io.on('connection', (socket) => {
         message: `⚠️ Warning ${warnings[socket.id]}/3: Vulgar language not allowed!`
       });
       if (warnings[socket.id] >= 3) {
-        socket.emit('banned', { message: '🚫 You have been disconnected for violating rules!' });
+        socket.emit('banned', { message: '🚫 Disconnected for violating rules!' });
         socket.disconnect();
       }
       return;
@@ -63,34 +84,29 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('typing', () => {
+    if (socket.room) {
+      socket.to(socket.room).emit('typing');
+    }
+  });
+
+  socket.on('report', () => {
+    if (socket.partner) {
+      warnings[socket.partner.id] = (warnings[socket.partner.id] || 0) + 2;
+      socket.emit('reported', { message: '🚩 Stranger reported!' });
+    }
+  });
+
   socket.on('next', () => {
     if (socket.partner) {
-      socket.partner.emit('disconnected', { message: 'Stranger disconnected. Finding new...' });
+      socket.partner.emit('disconnected', { message: '👋 Stranger left. Finding new...' });
       socket.partner.partner = null;
       socket.partner.room = null;
+      matchUsers(socket.partner);
     }
     socket.partner = null;
     socket.room = null;
-
-    if (waitingUser) {
-      const partner = waitingUser;
-      waitingUser = null;
-
-      const room = socket.id + '#' + partner.id;
-      socket.join(room);
-      partner.join(room);
-
-      socket.room = room;
-      partner.room = room;
-      socket.partner = partner;
-      partner.partner = socket;
-
-      socket.emit('matched', { message: 'Stranger found! Say hello 👋' });
-      partner.emit('matched', { message: 'Stranger found! Say hello 👋' });
-    } else {
-      waitingUser = socket;
-      socket.emit('waiting', { message: 'Looking for a stranger...' });
-    }
+    matchUsers(socket);
   });
 
   socket.on('disconnect', () => {
@@ -98,18 +114,17 @@ io.on('connection', (socket) => {
     delete warnings[socket.id];
 
     if (socket.partner) {
-      socket.partner.emit('disconnected', { message: 'Stranger disconnected. Finding new...' });
+      socket.partner.emit('disconnected', { message: '👋 Stranger disconnected. Finding new...' });
       socket.partner.partner = null;
       socket.partner.room = null;
+      matchUsers(socket.partner);
     }
 
-    if (waitingUser === socket) {
-      waitingUser = null;
-    }
+    waitingUsers = waitingUsers.filter(u => u.id !== socket.id);
   });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
