@@ -118,6 +118,78 @@
     }
     #report-btn:hover { background: #3d2f5e; }
 
+    /* SUGGESTION BOX */
+    #suggestion-section {
+      border-top: 1px solid #3d2f5e;
+      padding: 10px 12px 14px;
+      flex-shrink: 0;
+    }
+
+    #suggestion-toggle {
+      background: none;
+      border: none;
+      color: #c4b5fd;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+      padding: 6px 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    #suggestion-toggle:hover { color: #fff; }
+
+    #suggestion-arrow {
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    #suggestion-arrow.open { transform: rotate(180deg); }
+
+    #suggestion-body {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    #suggestion-body.show { display: flex; }
+
+    #suggestion-input {
+      background: #1a1225;
+      border: 1px solid #3d2f5e;
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: #e2d9f3;
+      font-size: 13px;
+      outline: none;
+      resize: vertical;
+      min-height: 60px;
+      font-family: inherit;
+      width: 100%;
+    }
+    #suggestion-input::placeholder { color: #6d5a8a; }
+    #suggestion-input:focus { border-color: #7c3aed; }
+
+    #suggestion-submit {
+      background: #7c3aed;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    #suggestion-submit:hover { background: #6d28d9; }
+    #suggestion-submit:disabled { background: #4c3575; cursor: default; opacity: 0.6; }
+
+    #suggestion-feedback {
+      font-size: 0.75rem;
+      color: #23a55a;
+      min-height: 14px;
+    }
+
     /* MAIN */
     #main {
       flex: 1;
@@ -535,6 +607,18 @@
   </div>
   <div id="chat-history"></div>
   <button id="report-btn">🚩 Report Stranger</button>
+
+  <div id="suggestion-section">
+    <button id="suggestion-toggle">
+      <span>💡 Suggestion Box</span>
+      <span id="suggestion-arrow">▾</span>
+    </button>
+    <div id="suggestion-body">
+      <textarea id="suggestion-input" placeholder="Got an idea or found a bug? Let us know..." maxlength="500"></textarea>
+      <button id="suggestion-submit">Submit</button>
+      <div id="suggestion-feedback"></div>
+    </div>
+  </div>
 </div>
 
 <!-- MAIN -->
@@ -888,6 +972,47 @@
   }
 
   document.getElementById('report-btn').addEventListener('click', reportStranger);
+
+  // SUGGESTION BOX
+  const suggestionToggle = document.getElementById('suggestion-toggle');
+  const suggestionArrow = document.getElementById('suggestion-arrow');
+  const suggestionBody = document.getElementById('suggestion-body');
+  const suggestionInput = document.getElementById('suggestion-input');
+  const suggestionSubmit = document.getElementById('suggestion-submit');
+  const suggestionFeedback = document.getElementById('suggestion-feedback');
+
+  suggestionToggle.addEventListener('click', () => {
+    suggestionBody.classList.toggle('show');
+    suggestionArrow.classList.toggle('open');
+  });
+
+  function submitSuggestion() {
+    const text = suggestionInput.value.trim();
+    if (!text) return;
+
+    suggestionSubmit.disabled = true;
+    socket.emit('suggestion', { text, username });
+
+    suggestionInput.value = '';
+    suggestionFeedback.textContent = '✓ Thanks for the suggestion!';
+
+    setTimeout(() => {
+      suggestionFeedback.textContent = '';
+      suggestionSubmit.disabled = false;
+    }, 2500);
+  }
+
+  suggestionSubmit.addEventListener('click', submitSuggestion);
+  suggestionInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      submitSuggestion();
+    }
+  });
+
+  socket.on('suggestionReceived', (data) => {
+    suggestionFeedback.textContent = '✓ ' + (data?.message || 'Thanks for the suggestion!');
+  });
 
   // Init history
   renderHistory();

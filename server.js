@@ -1,5 +1,7 @@
 const express = require('express');
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 const { Server } = require('socket.io');
 
 const app = express();
@@ -21,6 +23,31 @@ app.use(express.static('public'));
 
 let waitingUsers = [];
 const warnings = {};
+
+// SUGGESTION BOX SETUP
+const SUGGESTIONS_FILE = path.join(__dirname, 'suggestions.json');
+
+function loadSuggestions() {
+  try {
+    if (fs.existsSync(SUGGESTIONS_FILE)) {
+      const raw = fs.readFileSync(SUGGESTIONS_FILE, 'utf8');
+      return JSON.parse(raw);
+    }
+  } catch (err) {
+    console.error('Failed to read suggestions.json:', err);
+  }
+  return [];
+}
+
+function saveSuggestion(entry) {
+  const suggestions = loadSuggestions();
+  suggestions.push(entry);
+  try {
+    fs.writeFileSync(SUGGESTIONS_FILE, JSON.stringify(suggestions, null, 2));
+  } catch (err) {
+    console.error('Failed to write suggestions.json:', err);
+  }
+}
 
 function matchUsers(socket) {
   const interests = socket.interests || [];
@@ -108,6 +135,24 @@ io.on('connection', (socket) => {
       warnings[socket.partner.id] = (warnings[socket.partner.id] || 0) + 2;
       socket.emit('reported', { message: '🚩 Stranger reported!' });
     }
+  });
+
+  // SUGGESTION BOX
+  socket.on('suggestion', (data) => {
+    const text = (data && data.text ? String(data.text) : '').trim().slice(0, 500);
+    if (!text) return;
+
+    const entry = {
+      id: socket.id,
+      username: (data && data.username) || socket.username || 'Anonymous',
+      text,
+      timestamp: new Date().toISOString()
+    };
+
+    console.log('💡 New suggestion from', entry.username, ':', entry.text);
+    saveSuggestion(entry);
+
+    socket.emit('suggestionReceived', { message: 'Thanks for the suggestion!' });
   });
 
   socket.on('next', () => {
