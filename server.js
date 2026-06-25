@@ -24,23 +24,23 @@ const warnings = {};
 
 function matchUsers(socket) {
   const interests = socket.interests || [];
-
-  // Interest based matching
   let matchIndex = -1;
+
   if (interests.length > 0) {
     matchIndex = waitingUsers.findIndex(u =>
+      u.id !== socket.id &&
       u.interests && u.interests.some(i => interests.includes(i))
     );
   }
 
   if (matchIndex === -1 && waitingUsers.length > 0) {
-    matchIndex = 0;
+    matchIndex = waitingUsers.findIndex(u => u.id !== socket.id);
   }
 
   if (matchIndex !== -1) {
     const partner = waitingUsers.splice(matchIndex, 1)[0];
-
     const room = socket.id + '#' + partner.id;
+
     socket.join(room);
     partner.join(room);
 
@@ -49,8 +49,21 @@ function matchUsers(socket) {
     socket.partner = partner;
     partner.partner = socket;
 
-    socket.emit('matched', { message: '✅ Stranger found! Say hello 👋' });
-    partner.emit('matched', { message: '✅ Stranger found! Say hello 👋' });
+    const commonInterests = interests.filter(i => partner.interests && partner.interests.includes(i));
+
+    socket.emit('matched', {
+      message: '✅ Stranger found! Say hello 👋',
+      strangerName: partner.username || 'Anonymous',
+      strangerInterests: partner.interests || [],
+      commonInterests
+    });
+
+    partner.emit('matched', {
+      message: '✅ Stranger found! Say hello 👋',
+      strangerName: socket.username || 'Anonymous',
+      strangerInterests: socket.interests || [],
+      commonInterests
+    });
   } else {
     waitingUsers.push(socket);
     socket.emit('waiting', { message: '🔍 Looking for a stranger...' });
@@ -99,7 +112,10 @@ io.on('connection', (socket) => {
 
   socket.on('next', () => {
     if (socket.partner) {
-      socket.partner.emit('disconnected', { message: '👋 Stranger left. Finding new...' });
+      socket.partner.emit('strangerLeft', {
+        message: '👋 Stranger left. Finding new...',
+        strangerName: socket.username
+      });
       socket.partner.partner = null;
       socket.partner.room = null;
       matchUsers(socket.partner);
@@ -114,7 +130,10 @@ io.on('connection', (socket) => {
     delete warnings[socket.id];
 
     if (socket.partner) {
-      socket.partner.emit('disconnected', { message: '👋 Stranger disconnected. Finding new...' });
+      socket.partner.emit('strangerLeft', {
+        message: '👋 Stranger disconnected.',
+        strangerName: socket.username
+      });
       socket.partner.partner = null;
       socket.partner.room = null;
       matchUsers(socket.partner);
