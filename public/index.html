@@ -16,7 +16,6 @@
       overflow: hidden;
     }
 
-    /* SIDEBAR */
     #sidebar {
       width: 240px;
       background: #2a1f3d;
@@ -118,7 +117,6 @@
     }
     #report-btn:hover { background: #3d2f5e; }
 
-    /* SUGGESTION BOX */
     #suggestion-section {
       border-top: 1px solid #3d2f5e;
       padding: 10px 12px 14px;
@@ -190,7 +188,6 @@
       min-height: 14px;
     }
 
-    /* MAIN */
     #main {
       flex: 1;
       display: flex;
@@ -199,7 +196,6 @@
       height: 100dvh;
     }
 
-    /* HEADER */
     #header {
       background: #1a1225;
       border-bottom: 1px solid #3d2f5e;
@@ -248,7 +244,6 @@
       border-radius: 20px;
     }
 
-    /* CHAT BOX */
     #chat-box {
       flex: 1;
       overflow-y: auto;
@@ -306,7 +301,6 @@
       padding: 6px 12px;
     }
 
-    /* TYPING */
     #typing-indicator {
       padding: 2px 16px;
       font-size: 0.78rem;
@@ -315,7 +309,6 @@
       flex-shrink: 0;
     }
 
-    /* INPUT AREA */
     #input-area {
       padding: 8px 12px 12px;
       display: flex;
@@ -380,7 +373,6 @@
       flex-shrink: 0;
     }
 
-    /* EMOJI PANEL */
     #emoji-panel {
       display: none;
       position: fixed;
@@ -399,7 +391,6 @@
     .emoji { font-size: 1.3rem; cursor: pointer; padding: 4px; border-radius: 4px; }
     .emoji:hover { background: #3d2f5e; }
 
-    /* USERNAME MODAL */
     #username-modal {
       position: fixed;
       inset: 0;
@@ -508,7 +499,6 @@
 
     #start-btn:hover { background: #6d28d9; }
 
-    /* HISTORY VIEW */
     #history-view {
       display: none;
       flex: 1;
@@ -547,7 +537,6 @@
       width: fit-content;
     }
 
-    /* MOBILE */
     @media (max-width: 768px) {
       #sidebar { display: none; }
       #emoji-panel { left: 10px; bottom: 65px; width: 200px; }
@@ -560,14 +549,11 @@
 </head>
 <body>
 
-<!-- USERNAME MODAL -->
 <div id="username-modal">
   <div id="username-box">
     <h2>👋 Welcome to StrangerChat</h2>
     <p>Set your username and pick interests to find like-minded strangers!</p>
-
     <input class="modal-input" type="text" id="username-input" placeholder="Enter username..." maxlength="20" />
-
     <div>
       <p style="margin-bottom:8px;">Quick interests</p>
       <div id="interests-container">
@@ -583,7 +569,6 @@
         <span class="interest-tag" data-interest="Art">🎨 Art</span>
       </div>
     </div>
-
     <div>
       <p style="margin-bottom:6px;">Add custom interest</p>
       <div id="custom-interest-row">
@@ -591,12 +576,10 @@
         <button id="add-interest-btn">+ Add</button>
       </div>
     </div>
-
     <button id="start-btn">Start Chatting →</button>
   </div>
 </div>
 
-<!-- SIDEBAR -->
 <div id="sidebar">
   <div id="sidebar-header">
     <h1>💬 StrangerChat</h1>
@@ -607,7 +590,6 @@
   </div>
   <div id="chat-history"></div>
   <button id="report-btn">🚩 Report Stranger</button>
-
   <div id="suggestion-section">
     <button id="suggestion-toggle">
       <span>💡 Suggestion Box</span>
@@ -621,7 +603,6 @@
   </div>
 </div>
 
-<!-- MAIN -->
 <div id="main">
   <div id="header">
     <div id="header-top">
@@ -675,7 +656,6 @@
   let currentSession = null;
   let sessionCounter = 0;
 
-  // INTERESTS
   const selectedInterests = [];
 
   document.querySelectorAll('.interest-tag').forEach(tag => {
@@ -690,7 +670,6 @@
     });
   });
 
-  // CUSTOM INTEREST
   document.getElementById('add-interest-btn').addEventListener('click', addCustomInterest);
   document.getElementById('custom-interest-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') addCustomInterest();
@@ -700,9 +679,7 @@
     const val = document.getElementById('custom-interest-input').value.trim();
     if (!val) return;
     if (selectedInterests.includes(val)) return;
-
     selectedInterests.push(val);
-
     const tag = document.createElement('span');
     tag.className = 'interest-tag selected';
     tag.dataset.interest = val;
@@ -713,12 +690,10 @@
       if (idx > -1) selectedInterests.splice(idx, 1);
       else selectedInterests.push(val);
     });
-
     document.getElementById('interests-container').appendChild(tag);
     document.getElementById('custom-interest-input').value = '';
   }
 
-  // START
   document.getElementById('start-btn').addEventListener('click', () => {
     const val = document.getElementById('username-input').value.trim();
     username = val || 'Anonymous';
@@ -726,12 +701,10 @@
     socket.emit('join', { username, interests: selectedInterests });
   });
 
-  // MESSAGES
   function addMessage(text, type, label) {
     if (currentSession) {
       currentSession.messages.push({ text, type, label });
     }
-
     if (type === 'system' || type === 'warning') {
       const div = document.createElement('div');
       div.classList.add('msg', type);
@@ -755,11 +728,9 @@
     chatBox.scrollTop = chatBox.scrollHeight;
   }
 
-  // UPDATE HEADER
   function updateHeader(name, interests, commonInterests) {
     headerName.textContent = '# ' + name;
     headerInterests.innerHTML = '';
-
     if (interests && interests.length > 0) {
       interests.forEach(i => {
         const chip = document.createElement('span');
@@ -770,10 +741,8 @@
     }
   }
 
-  // SAVE TO HISTORY
   function saveToHistory(strangerName, interests, messages) {
     if (!messages || messages.filter(m => m.type !== 'system').length === 0) return;
-
     sessionCounter++;
     const session = {
       id: sessionCounter,
@@ -782,19 +751,16 @@
       messages: messages,
       preview: messages.filter(m => m.type !== 'system').slice(-1)[0]?.text || ''
     };
-
     chatSessions.unshift(session);
     renderHistory();
   }
 
-  // RENDER HISTORY SIDEBAR
   function renderHistory() {
     chatHistory.innerHTML = '';
     if (chatSessions.length === 0) {
       chatHistory.innerHTML = '<div style="padding:10px 12px; font-size:0.78rem; color:#6d5a8a;">No past chats yet</div>';
       return;
     }
-
     chatSessions.forEach(session => {
       const item = document.createElement('div');
       item.className = 'history-item';
@@ -808,16 +774,13 @@
     });
   }
 
-  // SHOW HISTORY CHAT
   function showHistoryChat(session) {
     chatBox.style.display = 'none';
     typingIndicator.style.display = 'none';
     document.getElementById('history-view').style.display = 'flex';
     document.getElementById('history-view').style.flexDirection = 'column';
-
     const hv = document.getElementById('history-view');
     hv.innerHTML = '';
-
     const backBtn = document.createElement('button');
     backBtn.id = 'back-btn';
     backBtn.textContent = '← Back to chat';
@@ -827,11 +790,9 @@
       typingIndicator.style.display = 'block';
     });
     hv.appendChild(backBtn);
-
     const title = document.createElement('h3');
     title.textContent = `Chat with ${session.name}`;
     hv.appendChild(title);
-
     if (session.interests.length > 0) {
       const interests = document.createElement('div');
       interests.style.cssText = 'display:flex; flex-wrap:wrap; gap:4px; margin-bottom:12px;';
@@ -843,7 +804,6 @@
       });
       hv.appendChild(interests);
     }
-
     session.messages.forEach(m => {
       if (m.type === 'system') return;
       const div = document.createElement('div');
@@ -874,6 +834,9 @@
     };
 
     currentSession = { messages: [] };
+    chatBox.innerHTML = '';           // ✅ Clear old messages
+    typingIndicator.textContent = ''; // ✅ Clear leftover typing indicator
+
     updateHeader(data.strangerName, data.strangerInterests, data.commonInterests);
     addMessage(data.message, 'system');
 
@@ -915,7 +878,6 @@
 
   socket.on('reported', (data) => addMessage(data.message, 'system'));
 
-  // SEND
   function sendMessage() {
     const text = msgInput.value.trim();
     if (!text) return;
@@ -933,16 +895,14 @@
     socket.emit('typing');
   });
 
-  // NEXT
   document.getElementById('next-btn').addEventListener('click', () => {
     if (currentSession && currentStranger) {
       saveToHistory(currentStranger.name, currentStranger.interests, currentSession.messages);
     }
     currentStranger = null;
     currentSession = null;
-
     socket.emit('next');
-    addMessage('Skipped. Looking for new stranger...', 'system');
+    chatBox.innerHTML = '';           // ✅ Also clear on Skip
     typingIndicator.textContent = '';
     statusDot.className = 'searching';
     sidebarStatus.textContent = 'Searching...';
@@ -951,7 +911,6 @@
     headerInterests.innerHTML = '';
   });
 
-  // EMOJI
   document.getElementById('emoji-btn').addEventListener('click', () => {
     document.getElementById('emoji-panel').classList.toggle('show');
   });
@@ -964,7 +923,6 @@
     });
   });
 
-  // REPORT
   function reportStranger() {
     socket.emit('report');
     addMessage('⚠️ Stranger reported!', 'system');
@@ -973,7 +931,6 @@
 
   document.getElementById('report-btn').addEventListener('click', reportStranger);
 
-  // SUGGESTION BOX
   const suggestionToggle = document.getElementById('suggestion-toggle');
   const suggestionArrow = document.getElementById('suggestion-arrow');
   const suggestionBody = document.getElementById('suggestion-body');
@@ -989,13 +946,10 @@
   function submitSuggestion() {
     const text = suggestionInput.value.trim();
     if (!text) return;
-
     suggestionSubmit.disabled = true;
     socket.emit('suggestion', { text, username });
-
     suggestionInput.value = '';
     suggestionFeedback.textContent = '✓ Thanks for the suggestion!';
-
     setTimeout(() => {
       suggestionFeedback.textContent = '';
       suggestionSubmit.disabled = false;
@@ -1014,7 +968,6 @@
     suggestionFeedback.textContent = '✓ ' + (data?.message || 'Thanks for the suggestion!');
   });
 
-  // Init history
   renderHistory();
 </script>
 </body>
